@@ -22,6 +22,13 @@ import reactor.core.publisher.Mono;
  */
 @Configuration
 public class CorsConfig {
+    /**
+     * 配置成* ，否则每自定义一个头都需要在此处增加配置
+     */
+    private static final String ALLOWED_HEADERS = "*";
+    private static final String ALLOWED_METHODS = "*";
+    private static final String ALLOWED_ORIGIN = "*";
+    private static final String ALLOWED_Expose = "*";
     private static final String MAX_AGE = "18000L";
 
     @Bean
@@ -31,21 +38,18 @@ public class CorsConfig {
             if (CorsUtils.isCorsRequest(request)) {
                 HttpHeaders requestHeaders = request.getHeaders();
                 ServerHttpResponse response = ctx.getResponse();
-                HttpMethod requestMethod = requestHeaders.getAccessControlRequestMethod();
                 HttpHeaders headers = response.getHeaders();
-                headers.add(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, requestHeaders.getOrigin());
-                headers.add(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,"Origin, No-Cache, X-Requested-With, If-Modified-Since, Pragma, Last-Modified, Cache-Control, Expires, Content-Type, X-E4M-With,userId,token");
+                headers.add(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, ALLOWED_ORIGIN);
+                headers.add(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,ALLOWED_HEADERS);
                 headers.add(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
-                headers.add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "*");
+                headers.add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, ALLOWED_Expose);
                 headers.add(HttpHeaders.ACCESS_CONTROL_MAX_AGE, MAX_AGE);
-                headers.add(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "*");
+                headers.add(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, ALLOWED_METHODS);
                 if (request.getMethod() == HttpMethod.OPTIONS) {
-
                     response.setStatusCode(HttpStatus.OK);
                     return Mono.empty();
                 }
             }
-
             return chain.filter(ctx);
         };
     }

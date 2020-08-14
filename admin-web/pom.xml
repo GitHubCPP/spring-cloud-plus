@@ -11,33 +11,33 @@
     <version>1.0-SNAPSHOT</version>
     <description>主项目</description>
     <dependencies>
-        <!--项目必须的基础组件-->
+        <!--base-plus-starter-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
-            <artifactId>base</artifactId>
+            <artifactId>base-plus-starter</artifactId>
         </dependency>
         <!--核心模块-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
-            <artifactId>core</artifactId>
+            <artifactId>core-plus-starter</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <!--脚本执行组件-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
-            <artifactId>flyway</artifactId>
+            <artifactId>flyway-plus-starter</artifactId>
             <version>${cloud.version}</version>
         </dependency>
         <!--shiro鉴权组件-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
-            <artifactId>rbac</artifactId>
+            <artifactId>rbac-plus-starter</artifactId>
             <version>${cloud.version}</version>
         </dependency>
         <!--分布式组件-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
-            <artifactId>cloud</artifactId>
+            <artifactId>cloud-plus-starter</artifactId>
             <version>${cloud.version}</version>
             <exclusions>
                 <exclusion>
@@ -54,22 +54,22 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!--消息组件-->
+        <!--通知组件-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
-            <artifactId>notice</artifactId>
+            <artifactId>notice-plus-starter</artifactId>
             <version>${cloud.version}</version>
         </dependency>
         <!--文件组件-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
-            <artifactId>file</artifactId>
+            <artifactId>document-plus-starter</artifactId>
             <version>${cloud.version}</version>
         </dependency>
         <!--工作流组件-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
-            <artifactId>activiti</artifactId>
+            <artifactId>activiti-plus-starter</artifactId>
             <version>${cloud.version}</version>
             <exclusions>
                 <exclusion>
@@ -81,31 +81,32 @@
         <!--定时任务组件-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
-            <artifactId>quartz</artifactId>
+            <artifactId>quartz-plus-starter</artifactId>
             <version>${cloud.version}</version>
         </dependency>
-        <!--activemq消息组件-->
+        <!--消息组件-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
-            <artifactId>activemq</artifactId>
+            <artifactId>mq-plus-starter</artifactId>
             <version>${cloud.version}</version>
         </dependency>
         <!--es组件-->
-        <!--<dependency>-->
-            <!--<groupId>org.gourd.hu</groupId>-->
-            <!--<artifactId>es</artifactId>-->
-            <!--<version>${cloud.version}</version>-->
-        <!--</dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.gourd.hu</groupId>-->
+<!--            <artifactId>es-plus-starter</artifactId>-->
+<!--            <version>${cloud.version}</version>-->
+<!--        </dependency>-->
+        <!--mongo组件-->
+        <dependency>
+            <groupId>org.gourd.hu</groupId>
+            <artifactId>mongo-plus-starter</artifactId>
+            <version>${cloud.version}</version>
+        </dependency>
+
         <!--缓存组件-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
             <artifactId>cache-plus-starter</artifactId>
-            <version>${cloud.version}</version>
-        </dependency>
-        <!--sub服务api-->
-        <dependency>
-            <groupId>org.gourd.hu</groupId>
-            <artifactId>sub-api</artifactId>
             <version>${cloud.version}</version>
         </dependency>
         <!--日志模块-->
@@ -135,6 +136,20 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration><encoding>UTF-8</encoding>
+                    <!-- 过滤后缀为pem、pfx的证书文件 -->
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>cer</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>pem</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>pfx</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>p12</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>jks</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
+                </configuration>
+            </plugin>
         </plugins>
         <resources>
             <!--yaml 中直接使用pom定义的属性-->
@@ -144,31 +159,6 @@
             </resource>
         </resources>
     </build>
-    <profiles>
-        <profile>
-            <id>local</id>
-            <!--默认取local配置-->
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <profiles.active>local</profiles.active>
-                <nacos.server-addr>111.231.111.150:8848</nacos.server-addr>
-                <nacos.namespace>d10ded89-2ce5-4cf9-ad2c-4e36f9b2be7e</nacos.namespace>
-                <nacos.group>CLOUD_PLUS</nacos.group>
-                <nacos.file-extension>yaml</nacos.file-extension>
-            </properties>
-        </profile>
-        <profile>
-            <id>test</id>
-            <properties>
-                <profiles.active>test</profiles.active>
-                <nacos.server-addr>111.231.111.150:8848</nacos.server-addr>
-                <nacos.namespace>d10ded89-2ce5-4cf9-ad2c-4e36f9b2be7e</nacos.namespace>
-                <nacos.group>CLOUD_PLUS</nacos.group>
-                <nacos.file-extension>yaml</nacos.file-extension>
-            </properties>
-        </profile>
-    </profiles>
+
 
 </project>

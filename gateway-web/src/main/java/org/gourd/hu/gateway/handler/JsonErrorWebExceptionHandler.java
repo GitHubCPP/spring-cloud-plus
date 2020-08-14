@@ -1,5 +1,6 @@
 package org.gourd.hu.gateway.handler;
 
+import org.gourd.hu.gateway.exception.UnauthorizedException;
 import org.springframework.boot.autoconfigure.web.ErrorProperties;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.autoconfigure.web.reactive.error.DefaultErrorWebExceptionHandler;
@@ -14,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author henry
+ * @author gourd.hu
  */
 public class JsonErrorWebExceptionHandler extends DefaultErrorWebExceptionHandler {
     public JsonErrorWebExceptionHandler(ErrorAttributes errorAttributes,
@@ -33,17 +34,11 @@ public class JsonErrorWebExceptionHandler extends DefaultErrorWebExceptionHandle
         if (error instanceof NotFoundException) {
             code = HttpStatus.NOT_FOUND.value();
             body = "Service Not Found";
-        } else if (error instanceof ResponseStatusException) {
+        } else if (error instanceof ResponseStatusException || error instanceof UnauthorizedException) {
             ResponseStatusException responseStatusException = (ResponseStatusException) error;
             code = responseStatusException.getStatus().value();
             body = responseStatusException.getMessage();
-        }
-//        else if (error instanceof ActionException) {
-//            ActionException actionException = (ActionException) error;
-//            code = actionException.getCode();
-//            body = actionException.getMessage();
-//        }
-        else {
+        }else {
             code = HttpStatus.INTERNAL_SERVER_ERROR.value();
             body = "Internal Server Error";
         }

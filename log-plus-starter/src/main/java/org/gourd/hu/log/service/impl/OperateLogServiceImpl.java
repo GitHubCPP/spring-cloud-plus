@@ -5,33 +5,29 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.gourd.hu.base.holder.RequestHolder;
-import org.gourd.hu.base.utils.DateUtil;
-import org.gourd.hu.base.utils.IpAddressUtil;
+import org.gourd.hu.core.utils.IpAddressUtil;
 import org.gourd.hu.log.annotation.OperateLog;
 import org.gourd.hu.log.dao.SysOperateLogDao;
 import org.gourd.hu.log.entity.SysOperateLog;
 import org.gourd.hu.log.service.OperateLogService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 /**
- * @author gourd
+ * @author gourd.hu
  * @date 2018-11-24
  */
-@Service
 @Slf4j
 public class OperateLogServiceImpl extends ServiceImpl<SysOperateLogDao, SysOperateLog> implements OperateLogService {
 
-    @Autowired
+    @Resource
     private SysOperateLogDao sysOperateLogDao;
 
     /**
@@ -66,7 +62,7 @@ public class OperateLogServiceImpl extends ServiceImpl<SysOperateLogDao, SysOper
             sysOperateLog.setBusinessName(operateLog.businessName());
         }
         // 设置过期时间
-        Date expireTime = DateUtil.addDaysForDate(DateUtil.getBeginTimeOfToday(), expireDays);
+        LocalDateTime expireTime = LocalDateTime.of(LocalDate.now(), LocalTime.of(0, 0, 0)).plusDays(expireDays);
         sysOperateLog.setExpireTime(expireTime);
         // 单位毫秒
         Long requestTime =startTime ==null? null: (System.currentTimeMillis() - startTime);

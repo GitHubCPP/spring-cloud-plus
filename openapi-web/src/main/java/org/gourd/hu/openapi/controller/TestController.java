@@ -4,8 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
-import org.gourd.hu.base.common.exception.BusinessException;
-import org.gourd.hu.base.common.response.BaseResponse;
+import org.gourd.hu.base.exception.enums.ResponseEnum;
+import org.gourd.hu.base.response.BaseResponse;
 import org.gourd.hu.log.annotation.OperateLog;
 import org.gourd.hu.openapi.constant.AuthConstant;
 import org.gourd.hu.openapi.dao.SysSecretDao;
@@ -13,7 +13,6 @@ import org.gourd.hu.openapi.dto.TestDTO;
 import org.gourd.hu.openapi.entity.SysSecret;
 import org.gourd.hu.openapi.utils.SignUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -21,7 +20,7 @@ import java.util.Map;
 
 /**
  * 测试
- * @author gourd
+ * @author gourd.hu
  */
 @RestController
 @RequestMapping("/test")
@@ -64,9 +63,8 @@ public class TestController {
         QueryWrapper queryWrapper = new QueryWrapper();
         queryWrapper.eq("app_key","cloud-plus-key");
         SysSecret sysSecret = sysSecretDao.selectOne(queryWrapper);
-        if(sysSecret == null){
-            throw new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR.value(),AuthConstant.APP_KEY_ERROR);
-        }
+        // 断言appkey存在
+        ResponseEnum.APP_KEY_ERROR.assertNotNull(sysSecret);
         sParaTemp.put(AuthConstant.SECRET_KEY, sysSecret.getSecretKey());
         String signStr = SignUtil.generateSign(sParaTemp,sysSecret.getExpireTimes());
         return signStr;
