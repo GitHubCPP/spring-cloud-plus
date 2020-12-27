@@ -1,11 +1,8 @@
 package org.gourd.hu.quartz.job;
 
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.JobDataMap;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
+import org.quartz.*;
 import org.springframework.scheduling.quartz.QuartzJobBean;
-import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
@@ -13,8 +10,9 @@ import java.time.LocalDateTime;
  * job触发时间
  * @author gourd
  */
-@Component
 @Slf4j
+@PersistJobDataAfterExecution
+@DisallowConcurrentExecution
 public class DemoJob extends QuartzJobBean {
 
     @Override

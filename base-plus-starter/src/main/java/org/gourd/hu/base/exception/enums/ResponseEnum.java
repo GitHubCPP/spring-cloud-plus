@@ -17,7 +17,8 @@ public enum ResponseEnum implements BusinessExceptionAssert {
     OK(200, "成功."),
     INTERNAL_SERVER_ERROR(500, "系统异常."),
     BAD_REQUEST(400,"参数不合法."),
-    UNAUTHORIZED(401,"无权限."),
+    UNAUTHORIZED(401,"无相关权限."),
+    TOKEN_CHECK_FAIL(403,"Token验证失败(Token expired or incorrect.)"),
     FORBIDDEN(403,"拒绝访问."),
     NOT_FOUND(404, "未找到."),
     METHOD_NOT_ALLOWED(405, "方法不支持."),
@@ -47,12 +48,23 @@ public enum ResponseEnum implements BusinessExceptionAssert {
     SIGN_EXPIRED(7003, "请求已经失效."),
 
     FTP_REFUSE_CONNECT(5001,"FTP服务器拒绝连接"),
+    FILE_NOT_EXIST(5004,"文件不存在"),
     FILE_PATH_NOT_EXIST(5004,"文件路径不存在:{}"),
     FTP_LOGIN_FAIL(5002,"ftp登录失败"),
     FILE_CREATE_FAIL(5003,"目录创建失败:{}"),
     FILE_UPLOAD_FAIL(5005,"文件上传失败:{}"),
     FILE_DOWNLOAD_FAIL(5005,"文件下载失败:{}"),
     FILE_DELETE_FAIL(5005,"文件删除失败:{}"),
+
+    // minio自定义异常
+    MIN_IO_INIT_FAIL(8000,"初始化Minio失败"),
+    MIN_IO_BUCKET_CHECK_FAIL(8001,"判断bucket是否存在失败"),
+    MIN_IO_BUCKET_CREATE_FAIL(8002,"创建bucket失败"),
+    MIN_IO_BUCKET_DELETE_FAIL(8003,"删除bucket失败"),
+    MIN_IO_FILE_UPLOAD_FAIL(8004,"文件上传失败"),
+    MIN_IO_FILE_DELETE_FAIL(8005,"删除文件失败"),
+    MIN_IO_FILE_DOWNLOAD_FAIL(8006,"文件下载失败"),
+    MIN_IO_FILE_GET_FAIL(8007,"文件获取失败"),
     ;
 
     /**

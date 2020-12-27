@@ -4,10 +4,12 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.support.ExcelTypeEnum;
+import com.alibaba.excel.write.handler.SheetWriteHandler;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.excel.write.style.AbstractCellStyleStrategy;
 import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.alibaba.fastjson.JSON;
+import com.lowagie.text.xml.xmp.XmpWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
@@ -146,6 +148,29 @@ public class EasyExcelUtil {
      * @param <T>
      * @throws IOException
      */
+    public static <T> void writeSingleExcel(String fileName, String sheetName, List<T> tList, Class tClass) throws IOException{
+        HttpServletResponse response = RequestHolder.getResponse();
+        try (ServletOutputStream outputStream = response.getOutputStream()){
+            setResponse(fileName, response);
+            EasyExcel.write(outputStream, tClass).autoCloseStream(Boolean.TRUE)
+                    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+                    .registerWriteHandler(new CustomCellWriteHandler())
+                    .sheet(sheetName)
+                    .doWrite(tList);
+        } catch (Exception e) {
+            errorWrite(response, e);
+        }
+    }
+
+
+    /**
+     * 导出文件
+     * 导出模板时，tList传一个空list即可
+     * @param tList 数据集
+     * @param tClass 数据类型
+     * @param <T>
+     * @throws IOException
+     */
     public static <T> void writeSingleExcel(String fileName, String sheetName, AbstractCellStyleStrategy customCellStyleStrategy, List<T> tList, Class tClass) throws IOException{
         HttpServletResponse response = RequestHolder.getResponse();
         try (ServletOutputStream outputStream = response.getOutputStream()){
@@ -177,6 +202,30 @@ public class EasyExcelUtil {
                     .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
                     .registerWriteHandler(new CustomCellWriteHandler())
                     .registerWriteHandler(customCellStyleStrategy)
+                    .sheet(sheetName)
+                    .doWrite(tList);
+        } catch (Exception e) {
+            errorWrite(response, e);
+        }
+    }
+
+    /**
+     * 导出文件
+     * 导出模板时，tList传一个空list即可
+     * @param tList 数据集
+     * @param tClass 数据类型
+     * @param <T>
+     * @throws IOException
+     */
+    public static <T> void writeSingleExcel(String fileName, String sheetName, List<T> tList, Class tClass, AbstractCellStyleStrategy customCellStyleStrategy, SheetWriteHandler sheetWriteHandler) throws IOException{
+        HttpServletResponse response = RequestHolder.getResponse();
+        try (ServletOutputStream outputStream = response.getOutputStream()){
+            setResponse(fileName, response);
+            EasyExcel.write(outputStream, tClass).autoCloseStream(Boolean.FALSE)
+                    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+                    .registerWriteHandler(new CustomCellWriteHandler())
+                    .registerWriteHandler(customCellStyleStrategy)
+                    .registerWriteHandler(sheetWriteHandler)
                     .sheet(sheetName)
                     .doWrite(tList);
         } catch (Exception e) {
@@ -276,7 +325,7 @@ public class EasyExcelUtil {
 //        response.reset();
         log.error(e.getMessage(), e);
         response.setContentType("application/json");
-        response.setCharacterEncoding("utf-8");
+        response.setCharacterEncoding(XmpWriter.UTF8);
         response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         response.getWriter().println(JSON.toJSONString(BaseResponse.fail("导出失败")));
     }
@@ -291,9 +340,9 @@ public class EasyExcelUtil {
         // 重置response
         response.reset();
         response.setContentType("application/vnd.ms-excel;charset=utf-8");
-        response.setCharacterEncoding("utf-8");
+        response.setCharacterEncoding(XmpWriter.UTF8);
         // 这里URLEncoder.encode可以防止中文乱码
-        fileName = URLEncoder.encode(fileName + DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss").format(LocalDateTime.now()) + ExcelTypeEnum.XLSX.getValue(), "UTF-8");
+        fileName = URLEncoder.encode(fileName + DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss").format(LocalDateTime.now()) + ExcelTypeEnum.XLSX.getValue(), XmpWriter.UTF8);
         response.setHeader("Content-disposition", "attachment;filename=" + fileName);
 
     }

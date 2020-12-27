@@ -3,6 +3,7 @@ package org.gourd.hu.base.handler;
 
 import lombok.extern.slf4j.Slf4j;
 import org.gourd.hu.base.exception.BusinessException;
+import org.gourd.hu.base.exception.PreAuthorizeException;
 import org.gourd.hu.base.exception.enums.IResponseEnum;
 import org.gourd.hu.base.exception.enums.ResponseEnum;
 import org.gourd.hu.base.request.bean.RequestDetail;
@@ -59,6 +60,20 @@ public class GlobalExceptionHandler{
 	@ResponseStatus(HttpStatus.OK)
 	@ExceptionHandler(value = BusinessException.class)
 	public ErrorResponse handleException(BusinessException ex) {
+		// 打印堆栈信息
+		printRequestDetail();
+		printApiCodeException(ex.getResponseEnum(), ex);
+		return ErrorResponse.result(ex.getResponseEnum().getCode(),ex.getResponseEnum().getMessage());
+	}
+
+	/**
+	 * 处理权限异常
+	 * @param ex
+	 * @return
+	 */
+	@ResponseStatus(HttpStatus.OK)
+	@ExceptionHandler(value = PreAuthorizeException.class)
+	public ErrorResponse handleException(PreAuthorizeException ex) {
 		// 打印堆栈信息
 		printRequestDetail();
 		printApiCodeException(ex.getResponseEnum(), ex);
@@ -190,11 +205,11 @@ public class GlobalExceptionHandler{
 	 * @return
 	 */
 	@ExceptionHandler(value = Exception.class)
-	@ResponseStatus(HttpStatus.OK)
+	@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
 	public ErrorResponse handleException(Exception ex) {
 		printRequestDetail();
 		printApiCodeException(ResponseEnum.INTERNAL_SERVER_ERROR, ex);
-		return ErrorResponse.result(ResponseEnum.INTERNAL_SERVER_ERROR);
+		return ErrorResponse.result(ResponseEnum.INTERNAL_SERVER_ERROR.getCode(),ex.getCause().getMessage());
 	}
 
 	/**

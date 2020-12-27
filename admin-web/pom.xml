@@ -48,10 +48,6 @@
                     <artifactId>commons-collections</artifactId>
                     <groupId>commons-collections</groupId>
                 </exclusion>
-                <exclusion>
-                    <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
-                    <groupId>com.alibaba.cloud</groupId>
-                </exclusion>
             </exclusions>
         </dependency>
         <!--通知组件-->
@@ -67,17 +63,17 @@
             <version>${cloud.version}</version>
         </dependency>
         <!--工作流组件-->
-        <dependency>
-            <groupId>org.gourd.hu</groupId>
-            <artifactId>activiti-plus-starter</artifactId>
-            <version>${cloud.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>activation</artifactId>
-                    <groupId>javax.activation</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.gourd.hu</groupId>-->
+<!--            <artifactId>activiti-plus-starter</artifactId>-->
+<!--            <version>${cloud.version}</version>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <artifactId>activation</artifactId>-->
+<!--                    <groupId>javax.activation</groupId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--        </dependency>-->
         <!--定时任务组件-->
         <dependency>
             <groupId>org.gourd.hu</groupId>
@@ -85,11 +81,11 @@
             <version>${cloud.version}</version>
         </dependency>
         <!--消息组件-->
-        <dependency>
-            <groupId>org.gourd.hu</groupId>
-            <artifactId>mq-plus-starter</artifactId>
-            <version>${cloud.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.gourd.hu</groupId>-->
+<!--            <artifactId>mq-plus-starter</artifactId>-->
+<!--            <version>${cloud.version}</version>-->
+<!--        </dependency>-->
         <!--es组件-->
 <!--        <dependency>-->
 <!--            <groupId>org.gourd.hu</groupId>-->
@@ -97,11 +93,11 @@
 <!--            <version>${cloud.version}</version>-->
 <!--        </dependency>-->
         <!--mongo组件-->
-        <dependency>
+        <!--<dependency>
             <groupId>org.gourd.hu</groupId>
             <artifactId>mongo-plus-starter</artifactId>
             <version>${cloud.version}</version>
-        </dependency>
+        </dependency>-->
 
         <!--缓存组件-->
         <dependency>
@@ -126,7 +122,7 @@
                 <configuration>
                     <fork>true</fork>
                     <!--启动类路径-->
-                    <mainClass>org.gourd.hu.AdminWebApplication</mainClass>
+                    <mainClass>org.gourd.hu.admin.AdminWebApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>

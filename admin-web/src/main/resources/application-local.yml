@@ -7,6 +7,20 @@ server:
     key-store-password: 123456
     key-store-type: pkcs12
     key-alias: gourd
+  servlet:
+    encoding:
+      enabled: true
+      force: true
+      charset: UTF-8
+  # 开启优雅停机
+  shutdown: graceful
+  undertow:
+    # 以下的配置会影响buffer,这些buffer会用于服务器连接的IO操作,有点类似netty的池化内存管理
+    # 每块buffer的空间大小,越小的空间被利用越充分，不要设置太大，以免影响其他应用，合适即可
+    buffer-size: 1024
+    # 是否分配的直接内存(NIO直接分配的堆外内存)
+    direct-buffers: true
+
 # 日志
 logging:
   file:
@@ -15,6 +29,7 @@ logging:
     root: info
   operate:
     all: true
+    # all为true时生效
     type: POST,DELETE,PUT,PATCH
     # 操作记录日志过期天数，默认30
     expire:
@@ -26,7 +41,21 @@ jasypt:
     password: GOURD-HXN-1314
 
 # spring配置
+
 spring:
+  main:
+    allow-bean-definition-overriding: true
+  lifecycle:
+    # 设置缓冲期，最大等待时间，默认30s
+    timeout-per-shutdown-phase: 30s
+
+  servlet:
+    multipart:
+      # 上传一个文件最大值,默认1Mb
+      max-file-size: 10MB
+      # 上传多个文件最大值,100Mb,默认10Mb
+      max-request-size: 100MB
+
   cloud:
     # nacos-配置
     nacos:
@@ -44,11 +73,13 @@ spring:
     sentinel:
       # 是否开启sentinel
       enabled: true
+      filter:
+        enabled: true
       # 取消Sentinel控制台懒加载
       eager: true
       # 控制台地址
       transport:
-        dashboard: 111.231.111.150:9090
+        dashboard: 111.231.111.150:8858
       #  持久化数据库-nacos
       datasource:
         # 限流
@@ -101,10 +132,6 @@ spring:
             ruleType: PARAM_FLOW
             server-addr: ${spring.cloud.nacos.config.server-addr}
             namespace: ${spring.cloud.nacos.config.namespace}
-    # 这里配置分组
-    alibaba:
-      seata:
-        tx-service-group: ${spring.application.name}-seata-service-group
     # 短信
     alicloud:
       access-key: ENC(VE61YIYweeEsuhe9Mf+LzBn4bo0MKIRU9vQhZd0FaLs=)
@@ -118,9 +145,6 @@ spring:
     baselineOnMigrate: true  # 设置为true，当迁移发现数据库非空且存在没有元数据的表时，自动执行基准迁移
     locations: classpath:/db/ #可以配置多个值
 
-    # 排除原生Druid的快速配置类
-  autoconfigure:
-    exclude: com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
   # mvc
   mvc:
     # 404 直接抛异常
@@ -129,11 +153,6 @@ spring:
     static-path-pattern: /**
     async:
       request-timeout: 60000 # 设置接口超时时间60s
-  http:
-    encoding:
-      force: true
-      enabled: true
-      charset: UTF-8
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -142,68 +161,47 @@ spring:
     store-type: redis
   # 数据库配置
   datasource:
-    druid:
-      # 访问地址：http://localhost:8088/hu/druid/index.html
-      stat-view-servlet:
-        loginUsername: admin
-        loginPassword: 123456
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      # 用于测试连接是否可用的查询语句
+      connection-test-query: SELECT 1
+      # 连接超时时间：毫秒，小于250毫秒，否则被重置为默认值30秒
+      connection-timeout: 60000
+      # 空闲连接超时时间，默认值600000（10分钟）
+      idle-timeout: 60000
+      # 连接最大存活时间，不等于0且小于30秒，会被重置为默认值30分钟.设置应该比mysql设置的超时时间短
+      max-lifetime: 600000
+      # 最大连接数
+      maximum-pool-size: 50
+      # 最小空闲连接，默认值10
+      minimum-idle: 10
     dynamic:
+      seata: true    #开启seata代理，开启后默认每个数据源都代理，如果某个不需要代理可单独关闭
       primary: master #设置默认的数据源或者数据源组,默认值即为master
       datasource:
         master:
-          url: jdbc:p6spy:mysql://111.231.111.150:3306/cloud-plus?useUnicode=true&characterEncoding=utf-8&serverTimezone=UTC&useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=GMT%2B8
-          driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+          url: jdbc:mysql://111.231.111.150:3306/cloud-plus?useUnicode=true&characterEncoding=utf-8&serverTimezone=UTC&allowMultiQueries=true&rewriteBatchedStatements=true&useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=GMT%2B8
+          driver-class-name: com.mysql.cj.jdbc.Driver
           username: root
           password: ENC(4M6RKeFuZ7OngpmunjkMm/a+W8eCJrsF)
-          validation-query: ${spring.datasource.dynamic.druid.validation-query}
         slave:
-          url: jdbc:p6spy:mysql://111.231.111.150:3306/cloud-plus?useUnicode=true&characterEncoding=utf-8&serverTimezone=UTC&useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=GMT%2B8
-          driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+          url: jdbc:mysql://111.231.111.150:3306/cloud-plus?useUnicode=true&characterEncoding=utf-8&serverTimezone=UTC&allowMultiQueries=true&useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=GMT%2B8
+          driver-class-name: com.mysql.cj.jdbc.Driver
           username: root
           password: ENC(4M6RKeFuZ7OngpmunjkMm/a+W8eCJrsF)
-          validation-query: ${spring.datasource.dynamic.druid.validation-query}
+          seata: false #这个数据源不需要seata
         activiti:
           url: jdbc:mysql://111.231.111.150:3306/activiti?useUnicode=true&characterEncoding=utf-8&serverTimezone=UTC&useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=GMT%2B8
           driver-class-name: com.mysql.cj.jdbc.Driver
           username: root
           password: ENC(4M6RKeFuZ7OngpmunjkMm/a+W8eCJrsF)
-          validation-query: ${spring.datasource.dynamic.druid.validation-query}
+          seata: false #这个数据源不需要seata
         quartz:
           url: jdbc:mysql://111.231.111.150:3306/quartz?useUnicode=true&characterEncoding=utf-8&serverTimezone=UTC&useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=GMT%2B8
           driver-class-name: com.mysql.cj.jdbc.Driver
           username: root
           password: ENC(4M6RKeFuZ7OngpmunjkMm/a+W8eCJrsF)
-          validation-query: ${spring.datasource.dynamic.druid.validation-query}
-      # druid
-      druid:
-        # 初始化时建立物理连接的个数
-        initial-size: 5
-        # 获取连接时最大等待时间，单位毫秒
-        max-wait: 60000
-        # 最小连接池数量
-        min-idle: 1
-        # 最大连接池数量
-        max-active: 20
-        # 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
-        time-between-eviction-runs-millis: 60000
-        # 配置一个连接在池中最小生存的时间，单位是毫秒
-        min-evictable-idle-time-millis: 300000
-        validation-query: select 1 FROM DUAL
-        test-while-idle: true
-        test-on-borrow: false
-        test-on-return: false
-        # 打开PSCache，并且指定每个连接上PSCache的大小
-        pool-prepared-statements: true
-        max-open-prepared-statements: 50
-        max-pool-prepared-statement-per-connection-size: 20
-        filter:
-          # 打开mergeSql功能；慢SQL记录
-          stat:
-            log-slow-sql: true
-            merge-sql: true
-            slow-sql-millis: 5000
-        #  配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙
-        filters: stat,wall,logback,config
+          seata: false #这个数据源不需要seata
   # thymeleaf
   thymeleaf:
     prefix: classpath:/templates/
@@ -252,44 +250,51 @@ spring:
       initialize-schema: never
     #设置quartz任务的数据持久化方式，默认是内存方式
     job-store-type: jdbc
+    # 关闭时等待任务完成
+    wait-for-jobs-to-complete-on-shutdown: true
+    # 可以覆盖已有的任务
+    overwrite-existing-jobs: true
     properties:
       org:
         quartz:
           scheduler:
+            # 调度器实例名称
             instanceName: etlCleanScheduler
+            # 调度器实例ID自动生成
             instanceId: AUTO
           jobStore:
+            # 调度信息存储处理类
             class: org.quartz.impl.jdbcjobstore.JobStoreTX
+            # 使用完全兼容JDBC的驱动
             driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
-            tablePrefix: QRTZ_  #Quartz表前缀
+            # Quartz表前缀
+            tablePrefix: QRTZ_
+            # 是否集群
             isClustered: true
             clusterCheckinInterval: 10000
+            # 是否将JobDataMap中的属性转为字符串存储
             useProperties: false
           threadPool:
+            # 指定线程池实现类，对调度器提供固定大小的线程池
             class: org.quartz.simpl.SimpleThreadPool
-            #线程数 一个任务使用一个线程
+            # 设置并发线程数量
             threadCount: 100
+            # 指定线程优先级
             threadPriority: 5
             threadsInheritContextClassLoaderOfInitializingThread: true
 
   # redis
   redis:
-    cluster:
-      nodes:
-        - redis://111.231.111.150:7000
-        - redis://111.231.111.150:7001
-        - redis://111.231.111.150:7002
-        - redis://111.231.111.150:7003
-        - redis://111.231.111.150:7004
-        - redis://111.231.111.150:7005
-      max-redirects: 3  # 获取失败 最大重定向次数
-      scan-interval: 5000
+    host: 111.231.111.150
+    port: 6379
+    password: ENC(4M6RKeFuZ7OngpmunjkMm/a+W8eCJrsF)
+    database: 0
     timeout: 6000  # 连接超时时长（毫秒）
 
   # 缓存
   cache:
     redis:
-      time-to-live: 20s
+      time-to-live: 20
 
   # activemq
   activemq:
@@ -355,6 +360,9 @@ spring:
       cluster-name: docker-cluster
       repositories:
         enabled: true
+      client:
+        reactive:
+          connection-timeout:
     # mongoDB
     mongodb:
       uri: mongodb://gourd:gourd@111.231.111.150:27017/gourd
@@ -396,6 +404,8 @@ fdfs:
   soTimeout: 1500
   # 连接tracker服务器超时时长
   connectTimeout: 600
+  # 组名称
+  group-name: gourd
   pool:
     # 从池中借出的对象的最大数目
     max-total: 200
@@ -408,29 +418,37 @@ fdfs:
     height: 150
   # 跟踪服务器tracker_server请求地址,支持多个
   trackerList:
-    - 47.103.5.190:22122
+    - 111.231.111.150:22122
   #
   # 存储服务器storage_server访问地址
-  web-server-url: http://47.103.5.190/
+  web-server-url: http://111.231.111.150:8888/
+
+# MinIo文件服务器
+min:
+  io:
+    endpoint: http://111.231.111.150:9000
+    accessKey: gourd.hu
+    secretKey: gourd123456
+
 
 # seata 分布式事务
 seata:
   enabled: true
-  enableAutoDataSourceProxy: true
-  tx-service-group: admin
+  application-id: ${spring.application.name}
+  enable-auto-data-source-proxy: false #一定要是false
+  tx-service-group: admin-tx-group
   service:
-    disable-global-transaction: false
-    grouplist:
-      # seata seaver的 地址配置，此处可以集群配置是个数组
-      default: 111.231.111.150:8091
     vgroup-mapping:
-      # key一定要与tx-service-group一致
-      admin: default
+      admin-tx-group: default  #key与上面的tx-service-group的值对应
   registry:
     type: nacos
     nacos:
-      server-addr: 111.231.111.150:8848
+      server-addr: ${spring.cloud.nacos.config.server-addr}
+      namespace: cloud-plus-seata
+      group: SEATA_GROUP
       cluster: default
+      username: nacos
+      password: nacos
 
 # 定时任务执行ip地址
 schedule:
@@ -477,22 +495,16 @@ feign:
     enabled: true
 
 management:
-  endpoints:
-    web:
-      exposure:
-        include: "*" #暴露所有节点
-    logfile:
-      external-file: ./logs
-    health:
-      mail:
-        enabled: false
-      elasticsearch:
-        enabled: false
-      elasticsearchRest:
-        enabled: false
   endpoint:
     health:
-      show-details: ALWAYS  #显示详细信息
+      show-details: always # 显示健康详情
+    shutdown:
+      enabled: true # 开启shutdown端点访问
+  endpoints:
+    web:
+      base-path: /actuator # 访问根路径
+      exposure:
+        include: "*" # 开启除了shutdown以外的所有端点访问
 
   #MyBatisPlus
   #文档： https://mp.baomidou.com/config/#%E5%9F%BA%E6%9C%AC%E9%85%8D%E7%BD%AE
@@ -525,26 +537,70 @@ kaptcha:
     color: black
     thickness: 1
 
+# p6spy sql打印
+decorator:
+  datasource:
+    enabled: true # 是否启用
+
+
 # ftp配置
 ftp:
-  host:
-  port:
-  username:
-  password:
-  basePath:
+  host: xxx
+  port: 22
+  username: xxx
+  password: xxx
+  basePath: xxx
+
+# sftp配置
+sftp:
+  client:
+    # ip地址
+    host: xxx
+    # 端口
+    port: 22
+    # 用户名
+    username: xxx
+    # 密码
+    password:
+    # 密钥文件路径
+    privateKey: C:\Users\13584\Desktop\xxx.ppk
+    # 密钥的密码
+    passphrase: xxx
+    # 协议
+    protocol: sftp
+    # 根路径
+    root: /home/gourd
+    # session连接超时时间
+    sessionConnectTimeout: 15000
+    # channel连接超时时间
+    channelConnectedTimeout: 15000
+    sessionStrictHostKeyChecking: no
+
+
+swagger:
+  license: MIT
+  contact:
+    name: 葫芦胡
+    url: https://blog.csdn.net/HXNLYW
+    email: 13584278267@163.com
+  description: spring-cloud-plus 是以spring-cloud-alibaba为基础并整合一些常用框架的分布式基础开发平台
+  demo-package: org.gourd.hu.demo.controller
+  license-url: https://blog.csdn.net/HXNLYW
+  title: spring-cloud-plus
+  version: 1.0.0
 
 # 鉴权
 auth:
   # JWT
   jwt:
+    # jwt自定义请求头key
     header: jwt-token
+    # 秘钥
     encryptJWTKey: U0JBUElKV1RkV2FuZzkyNjQ1NA==
-    # AccessToken过期时间-5分钟-5*60(秒为单位)
+    # JWT过期时间（单位s）
     accessTokenExpireTime: 300
-    # RefreshToken过期时间-30分钟-30*60(秒为单位)
+    # JWT续期时间（单位s），即token过期后，此时间内操作会自动续期。
     refreshTokenExpireTime: 1800
-    # Shiro缓存过期时间-5分钟-5*60(秒为单位)(一般设置与AccessToken过期时间一致)
-    shiroCacheExpireTime: 300
   # 不需要鉴权的路径
   ignores:
     - "/"
@@ -552,10 +608,12 @@ auth:
     - "/excel/**"
     - "/file/**"
     - "/document/**"
+    - "/csv/**"
     - "/user-es/**"
     - "/quartz/**"
     - "/test/**"
     - "/cloud/**"
+    - "/cache/**"
     - "/mq/**"
     - "/kaptcha/**"
     - "/activiti/**"
@@ -577,7 +635,6 @@ auth:
     - "*.png"
     - "*.ico"
     - "/favicon.ico"
-    - "/druid/**"
     - "/public/**"
     - "/actuator/**"
     - "/swagger-ui.html"

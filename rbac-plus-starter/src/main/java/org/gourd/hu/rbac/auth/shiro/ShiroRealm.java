@@ -7,7 +7,7 @@ package org.gourd.hu.rbac.auth.shiro;
 import com.auth0.jwt.interfaces.Claim;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
-import org.apache.shiro.authc.AuthenticationException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
@@ -16,12 +16,16 @@ import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.authz.UnauthorizedException;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
+import org.gourd.hu.base.exception.PreAuthorizeException;
+import org.gourd.hu.base.exception.enums.ResponseEnum;
+import org.gourd.hu.base.holder.RequestHolder;
 import org.gourd.hu.cache.utils.RedisUtil;
+import org.gourd.hu.core.constant.HeaderConstant;
 import org.gourd.hu.rbac.auth.jwt.JwtToken;
 import org.gourd.hu.rbac.auth.jwt.JwtUtil;
 import org.gourd.hu.rbac.constant.JwtConstant;
-import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
@@ -30,7 +34,6 @@ import java.util.Map;
  * @author gourd.hu
  */
 @Slf4j
-@Component
 public class ShiroRealm extends AuthorizingRealm {
 
     @Override
@@ -44,18 +47,12 @@ public class ShiroRealm extends AuthorizingRealm {
      */
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken auth) throws UnauthorizedException {
-        String token = (String) auth.getCredentials();
-        // 开始认证，要AccessToken认证通过，且Redis中存在RefreshToken，且两个Token时间戳一致
-        String subject = JwtUtil.getSubject(token);
-        if (JwtUtil.verify(token) && RedisUtil.existAny(JwtConstant.PREFIX_SHIRO_REFRESH_TOKEN + subject)) {
-            // 获取RefreshToken的时间戳
-            Long currentTimeMillisRedis = Long.valueOf(RedisUtil.get(JwtConstant.PREFIX_SHIRO_REFRESH_TOKEN + subject).toString());
-            // 获取AccessToken时间戳，与RefreshToken的时间戳对比
-            if (JwtUtil.getClaimLong(token,JwtConstant.JWT_CURRENT_TIME_MILLIS).equals(currentTimeMillisRedis)) {
-                return new SimpleAuthenticationInfo(token, token, this.getClass().getName());
-            }
+        String token = auth.getCredentials().toString();
+        // 开始认证，要AccessToken认证通过
+        if (StringUtils.isNotBlank(RedisUtil.getStr(token)) && JwtUtil.verify(RedisUtil.getStr(token))) {
+            return new SimpleAuthenticationInfo(token, token, this.getClass().getName());
         }
-        throw new AuthenticationException("Token已过期(Token expired or incorrect.)");
+        throw new PreAuthorizeException(ResponseEnum.TOKEN_CHECK_FAIL);
     }
 
 
@@ -75,19 +72,77 @@ public class ShiroRealm extends AuthorizingRealm {
      */
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
-
-        String accessToken = principals.toString();
-        SimpleAuthorizationInfo simpleAuthorizationInfo = new SimpleAuthorizationInfo();
-        Map<String, Claim> claims = JwtUtil.getClaims(accessToken);
-        if(MapUtils.isEmpty(claims)){
-            throw new UnauthorizedException("Token已过期(Token expired or incorrect.)");
-        }
+        Map<String, Claim> claims = getTokenClaimMap(principals);
         // 解析角色和权限
         List<String> roles = claims.get(JwtConstant.JWT_ROLES_KEY).asList(String.class);
         List<String> permissions = claims.get(JwtConstant.JWT_PERMISSIONS_KEY).asList(String.class);
+        SimpleAuthorizationInfo simpleAuthorizationInfo = new SimpleAuthorizationInfo();
         simpleAuthorizationInfo.addRoles(roles);
         simpleAuthorizationInfo.addStringPermissions(permissions);
         return simpleAuthorizationInfo;
+    }
+
+
+    /**
+     * 自定义权限校验
+     * 增加超级管理员校验
+     * 
+     * @param principals
+     * @param permission
+     * @return
+     */
+    @Override
+    public  boolean isPermitted(PrincipalCollection principals, String permission){
+        HttpServletRequest httpServletRequest = RequestHolder.getRequest();
+        String tokenIgnoreFlag = httpServletRequest.getHeader(HeaderConstant.HEADER_TOKEN_IGNORE);
+        if(HeaderConstant.TOKEN_IGNORE_FLAG.equals(tokenIgnoreFlag)){
+            return true;
+        }
+        Map<String, Claim> claims = getTokenClaimMap(principals);
+        // 解析权限
+        List<String> permissions = claims.get(JwtConstant.JWT_PERMISSIONS_KEY).asList(String.class);
+        if(!permissions.contains(JwtConstant.ALL_PERMISSION) && !super.isPermitted(principals,permission)){
+            throw new PreAuthorizeException(ResponseEnum.UNAUTHORIZED);
+        }
+        return true;
+    }
+
+    /**
+     * 自定义角色校验
+     * 增加超级管理员校验
+     * 
+     * @param principals
+     * @param roleIdentifier
+     * @return
+     */
+    @Override
+    public boolean hasRole(PrincipalCollection principals, String roleIdentifier) {
+        HttpServletRequest httpServletRequest = RequestHolder.getRequest();
+        String tokenIgnoreFlag = httpServletRequest.getHeader(HeaderConstant.HEADER_TOKEN_IGNORE);
+        if(HeaderConstant.TOKEN_IGNORE_FLAG.equals(tokenIgnoreFlag)){
+            return true;
+        }
+        Map<String, Claim> claims = getTokenClaimMap(principals);
+        // 解析角色和权限
+        List<String> roles = claims.get(JwtConstant.JWT_ROLES_KEY).asList(String.class);
+        if(!roles.contains(JwtConstant.SUPPER_ADMIN_ROLE) && !super.hasRole(principals,roleIdentifier)){
+            throw new PreAuthorizeException(ResponseEnum.UNAUTHORIZED);
+        }
+        return true;
+    }
+
+    /**
+     * 获取当前用户ClaimMap
+     * @param principals
+     * @return
+     */
+    private Map<String, Claim> getTokenClaimMap(PrincipalCollection principals) {
+        String accessToken = principals.toString();
+        Map<String, Claim> claims = JwtUtil.getClaims(accessToken);
+        if (MapUtils.isEmpty(claims)) {
+            throw new PreAuthorizeException(ResponseEnum.TOKEN_CHECK_FAIL);
+        }
+        return claims;
     }
 
 }

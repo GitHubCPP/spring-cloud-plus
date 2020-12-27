@@ -6,20 +6,22 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.gourd.hu.admin.service.TestService;
+import org.gourd.hu.base.holder.RequestHolder;
 import org.gourd.hu.base.response.BaseResponse;
-import org.gourd.hu.cache.annotation.NoRepeatSubmit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * 测试
  *
  * @author gourd.hu
  */
-@Api(tags = "项目测试API", description = "项目测试API" )
+@Api(tags = "项目测试API")
 @RestController
 @RequestMapping("/test")
 @Slf4j
@@ -28,17 +30,12 @@ public class TestController {
     @Autowired
     private TestService testService;
 
-    @GetMapping("/repeat")
-    @ApiOperation(value = "测试重复调用")
-    @NoRepeatSubmit(2)
-    public BaseResponse repeatTest(@RequestParam String param) {
-        return BaseResponse.ok("success,参数："+param);
-    }
 
     @GetMapping("/log")
     @ApiOperation(value = "测试操作日志")
     @ApiImplicitParams({@ApiImplicitParam(name = "jwt-token", value = "jwt-token", required = false, dataType = "string", paramType = "header")})
     public BaseResponse logTest(@RequestParam String param) {
+        HttpServletRequest request = RequestHolder.getRequest();
         try {
             Thread.sleep(1100);
         } catch (InterruptedException e) {

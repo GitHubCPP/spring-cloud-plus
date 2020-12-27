@@ -1,5 +1,6 @@
 package org.gourd.hu.doc.utils;
 
+import com.lowagie.text.xml.xmp.XmpWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.gourd.hu.base.exception.enums.ResponseEnum;
@@ -20,21 +21,6 @@ import java.util.Map;
 @Slf4j
 public class WordUtil {
 
-
-    public static void generateDoc(TemplateEngine templateEngine, String templateName,OutputStream outputStream, Map<String,Object> variables) throws UnsupportedEncodingException {
-        // 声明一个上下文对象，里面放入要存到模板里面的数据
-        final Context context = new Context();
-        context.setVariables(variables);
-        String htmlContext = templateEngine.process(templateName, context);
-        try(InputStream is = new ByteArrayInputStream(htmlContext.getBytes("UTF-8"));){
-            POIFSFileSystem fs = new POIFSFileSystem();
-            // 对应于org.apache.poi.hdf.extractor.WordDocument
-            fs.createDocument(is, "WordDocument");
-            fs.writeFilesystem(outputStream);
-        }catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-    }
     /**
      * word下载
      *
@@ -48,7 +34,7 @@ public class WordUtil {
         // 断言参数不为空
         ResponseEnum.TEMPLATE_DATA_NULL.assertNotEmpty(variables);
         // 设置编码、文件ContentType类型、文件头、下载文件名
-        response.setCharacterEncoding("utf-8");
+        response.setCharacterEncoding(XmpWriter.UTF8);
         response.setContentType("application/msword");
         try {
             response.setHeader("Content-Disposition", "attachment;fileName=" +
@@ -96,6 +82,29 @@ public class WordUtil {
         try (FileOutputStream outputStream = new FileOutputStream(filePath)) {
             generateDoc(templateEngine, templateName, outputStream, variables);
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 生成Doc
+     * @param templateEngine
+     * @param templateName
+     * @param outputStream
+     * @param variables
+     * @throws UnsupportedEncodingException
+     */
+    public static void generateDoc(TemplateEngine templateEngine, String templateName,OutputStream outputStream, Map<String,Object> variables) throws UnsupportedEncodingException {
+        // 声明一个上下文对象，里面放入要存到模板里面的数据
+        final Context context = new Context();
+        context.setVariables(variables);
+        String htmlContext = templateEngine.process(templateName, context);
+        try(InputStream is = new ByteArrayInputStream(htmlContext.getBytes(XmpWriter.UTF8));){
+            POIFSFileSystem fs = new POIFSFileSystem();
+            // 对应于org.apache.poi.hdf.extractor.WordDocument
+            fs.createDocument(is, "WordDocument");
+            fs.writeFilesystem(outputStream);
+        }catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }

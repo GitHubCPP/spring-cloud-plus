@@ -10,11 +10,11 @@ import org.gourd.hu.base.exception.enums.ResponseEnum;
 import org.gourd.hu.base.holder.SpringContextHolder;
 import org.gourd.hu.base.response.BaseResponse;
 import org.gourd.hu.cache.utils.RedisUtil;
+import org.gourd.hu.core.constant.ConsoleColors;
 import org.gourd.hu.core.constant.HeaderConstant;
 import org.gourd.hu.core.utils.JsonConvertUtil;
 import org.gourd.hu.rbac.auth.jwt.JwtToken;
 import org.gourd.hu.rbac.auth.jwt.JwtUtil;
-import org.gourd.hu.rbac.constant.JwtConstant;
 import org.gourd.hu.rbac.properties.AuthProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -35,7 +35,7 @@ import java.io.PrintWriter;
  */
 @Component
 @Slf4j
-public class JwtAuthFilter extends BasicHttpAuthenticationFilter {
+public class  JwtAuthFilter extends BasicHttpAuthenticationFilter {
 
     @Autowired
     private AuthProperties authProperties;
@@ -47,7 +47,7 @@ public class JwtAuthFilter extends BasicHttpAuthenticationFilter {
     @Override
     protected boolean isLoginAttempt(ServletRequest request, ServletResponse response) {
         if(authProperties == null ){
-            authProperties = SpringContextHolder.getBean("authProperties",AuthProperties.class);
+            authProperties = SpringContextHolder.getBean(AuthProperties.class);
         }
         HttpServletRequest req = (HttpServletRequest) request;
         String jwtToken = req.getHeader(authProperties.getJwt().getHeader());
@@ -55,7 +55,7 @@ public class JwtAuthFilter extends BasicHttpAuthenticationFilter {
     }
 
     @Override
-    protected boolean executeLogin(ServletRequest request, ServletResponse response) throws Exception {
+    protected boolean executeLogin(ServletRequest request, ServletResponse response){
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
         String accessToken = httpServletRequest.getHeader(authProperties.getJwt().getHeader());
         JwtToken jwtToken = new JwtToken(accessToken);
@@ -77,8 +77,8 @@ public class JwtAuthFilter extends BasicHttpAuthenticationFilter {
         // 查看当前Header中是否携带Authorization属性(Token)，有的话就进行登录认证授权
         if (this.isLoginAttempt(request, response)) {
             try {
-                // 进行Shiro的登录UserRealm
-                this.executeLogin(request, response);
+                // 进行Shiro的登录Realm
+                return this.executeLogin(request, response);
             } catch (Exception e) {
                 // 认证出现异常，传递错误信息msg
                 String msg = e.getMessage();
@@ -89,9 +89,14 @@ public class JwtAuthFilter extends BasicHttpAuthenticationFilter {
                     msg = "Token或者密钥不正确(" + throwable.getMessage() + ")";
                 } else if (throwable instanceof TokenExpiredException) {
                     // 该异常为JWT的AccessToken已过期，判断RefreshToken未过期就进行AccessToken刷新
-                    if (this.refreshToken(request, response)) {
-                        return true;
-                    } else {
+                    HttpServletRequest req = (HttpServletRequest) request;
+                    String jwtToken = req.getHeader(authProperties.getJwt().getHeader());
+                    if (RedisUtil.existStrAny(jwtToken)) {
+                        log.info(ConsoleColors.GREEN_BOLD + "Token自动续期" + ConsoleColors.RESET);
+                        JwtUtil.reNewToken(jwtToken);
+                        // 进行Shiro的登录Realm
+                        return this.executeLogin(request, response);
+                    }else {
                         msg = "Token已过期(" + throwable.getMessage() + ")";
                     }
                 } else {
@@ -121,7 +126,6 @@ public class JwtAuthFilter extends BasicHttpAuthenticationFilter {
             this.response401(response, "请先登录");
             return false;
         }
-        return true;
     }
 
     @Override
@@ -137,42 +141,6 @@ public class JwtAuthFilter extends BasicHttpAuthenticationFilter {
             return false;
         }
         return super.preHandle(request, response);
-    }
-
-
-    /**
-     * 此处为AccessToken刷新，进行判断RefreshToken是否过期，未过期就返回新的AccessToken且继续正常访问
-     */
-    private boolean refreshToken(ServletRequest request, ServletResponse response) {
-        // 拿到当前Header中Authorization的AccessToken(Shiro中getAuthzHeader方法已经实现)
-        HttpServletRequest req = (HttpServletRequest) request;
-        String token = req.getHeader(authProperties.getJwt().getHeader());
-        // 获取当前userId
-        String subject = JwtUtil.getSubject(token);
-        // 判断Redis中RefreshToken是否存在
-        if (RedisUtil.existAny(JwtConstant.PREFIX_SHIRO_REFRESH_TOKEN + subject)) {
-            // Redis中RefreshToken还存在，获取RefreshToken的时间戳
-            Long currentTimeMillisRedis = Long.valueOf(RedisUtil.get(JwtConstant.PREFIX_SHIRO_REFRESH_TOKEN + subject).toString());
-            // 获取当前AccessToken中的时间戳，与RefreshToken的时间戳对比，如果当前时间戳一致，进行AccessToken刷新
-            if (JwtUtil.getClaimLong(token,JwtConstant.JWT_CURRENT_TIME_MILLIS).equals(currentTimeMillisRedis)) {
-                // 获取当前最新时间戳
-                Long currentTimeMillis = System.currentTimeMillis();
-                // 设置RefreshToken中的时间戳为当前最新时间戳，且刷新过期时间重新为30分钟过期(配置文件可配置refreshTokenExpireTime属性)
-                RedisUtil.setExpire(JwtConstant.PREFIX_SHIRO_REFRESH_TOKEN + subject, currentTimeMillis, authProperties.getJwt().getRefreshTokenExpireTime());
-                // 刷新AccessToken，设置时间戳为当前最新时间戳
-                token = JwtUtil.refreshToken(token,currentTimeMillis);
-                // 将新刷新的AccessToken再次进行Shiro的登录
-                JwtToken jwtToken = new JwtToken(token);
-                // 提交给UserRealm进行认证，如果错误他会抛出异常并被捕获，如果没有抛出异常则代表登入成功，返回true
-                this.getSubject(request, response).login(jwtToken);
-                // 最后将刷新的AccessToken存放在Response的Header中的Authorization字段返回
-                HttpServletResponse httpServletResponse = WebUtils.toHttp(response);
-                httpServletResponse.setHeader(authProperties.getJwt().getHeader(), token);
-                httpServletResponse.setHeader("Access-Control-Expose-Headers", authProperties.getJwt().getHeader());
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

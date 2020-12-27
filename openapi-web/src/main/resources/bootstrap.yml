@@ -1,0 +1,15 @@
+spring:
+  profiles:
+    active: local
+  application:
+    name: openapi
+
+server:
+  port: 10003
+  servlet:
+    encoding:
+      enabled: true
+      force: true
+      charset: UTF-8
+  # 开启优雅停机
+  shutdown: graceful

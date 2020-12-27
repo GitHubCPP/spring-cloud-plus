@@ -1,0 +1,60 @@
+
+# 日志
+logging:
+  file:
+    path: ./logs
+  level:
+    root: info
+  # 操作日志过期时长
+  operate:
+    all: true
+    expire:
+      days: 30
+
+# jasypt加密密钥
+jasypt:
+  encryptor:
+    password: GOURD-HXN-1314
+
+# spring配置
+spring:
+  cloud:
+    # nacos-配置
+    nacos:
+      # 注册发现中心
+      discovery:
+        # 是否开启注册中心，默认true
+        enabled: true
+        group: ${spring.cloud.nacos.config.group}
+        # 默认应用名
+        service: ${spring.application.name}
+        server-addr: ${spring.cloud.nacos.config.server-addr}
+        namespace: ${spring.cloud.nacos.config.namespace}
+  # 数据库配置
+  datasource:
+    dynamic:
+      primary: master #设置默认的数据源或者数据源组,默认值即为master
+      datasource:
+        master:
+          url: jdbc:mysql://111.231.111.150:3306/cloud-plus?useUnicode=true&characterEncoding=utf-8&serverTimezone=UTC&useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=GMT%2B8
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          username: root
+          password: ENC(4M6RKeFuZ7OngpmunjkMm/a+W8eCJrsF)
+  # redis
+  redis:
+    host: 111.231.111.150
+    port: 6379
+    password: ENC(4M6RKeFuZ7OngpmunjkMm/a+W8eCJrsF)
+    timeout: 6000  # 连接超时时长（毫秒）
+
+management:
+  endpoint:
+    health:
+      show-details: always # 显示健康详情
+    shutdown:
+      enabled: true # 开启shutdown端点访问
+  endpoints:
+    web:
+      base-path: /actuator # 访问根路径
+      exposure:
+        include: "*" # 开启除了shutdown以外的所有端点访问

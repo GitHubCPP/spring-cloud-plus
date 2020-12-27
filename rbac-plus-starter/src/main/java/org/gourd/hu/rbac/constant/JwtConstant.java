@@ -8,6 +8,16 @@ package org.gourd.hu.rbac.constant;
  */
 public class JwtConstant {
 
+    /**
+     * 所有权限标识
+     */
+    public static final String ALL_PERMISSION = "*:*:*";
+
+    /**
+     * 超级管理员角色
+     */
+    public static final String SUPPER_ADMIN_ROLE = "SUPER_ADMIN";
+
     public static final String REQUEST_AUTH_HEADER="Authorization";
     /**
      * 正常token
@@ -99,16 +109,5 @@ public class JwtConstant {
      * redis过期时间，以秒为单位，一天
      */
     public static final int EXRP_DAY = 60 * 60 * 24;
-
-    /**
-     * redis-key-前缀-shiro:access_token:
-     */
-    public static final String PREFIX_SHIRO_ACCESS_TOKEN = "shiro:access_token:";
-
-    /**
-     * redis-key-前缀-shiro:refresh_token:
-     */
-    public static final String PREFIX_SHIRO_REFRESH_TOKEN = "shiro:refresh_token:";
-
 
 }
